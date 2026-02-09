@@ -45,7 +45,24 @@ function init() {
   renderGrid();
   renderSchedules();
   renderCurrentTimeLine();
-  initGoogleAuth();
+
+  // iframe 안에서 실행 중인지 확인
+  const isInIframe = window.self !== window.top;
+
+  if (isInIframe) {
+    // 노션 임베드에서는 Google 연동 버튼을 "새 창에서 열기"로 변경
+    googleAuthBtn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+      </svg>
+      <span>새 창에서 열기</span>
+    `;
+    googleAuthBtn.onclick = () => {
+      window.open(window.location.href, '_blank');
+    };
+  } else {
+    initGoogleAuth();
+  }
 
   setInterval(renderCurrentTimeLine, 60000);
 }

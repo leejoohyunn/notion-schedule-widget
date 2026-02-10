@@ -1,3 +1,4 @@
+(function() {
 // ==================== Supabase 설정 ====================
 const SUPABASE_URL = 'https://gnhirzcrnufzetocwrii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduaGlyemNybnVmemV0b2N3cmlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2MTY5NDgsImV4cCI6MjA4NjE5Mjk0OH0.s9dcZPhhiOMalRPSYQ2MI5MzsaGTYrGut0-4NiDjyMQ';
@@ -793,5 +794,16 @@ document.getElementById('authEmail').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendOTP();
 });
 
+// HTML onclick에서 접근할 수 있도록 전역에 노출
+window.handleAuth = handleAuth;
+window.changeWeek = changeWeek;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.closeAuthModal = closeAuthModal;
+window.sendOTP = sendOTP;
+window.verifyOTP = verifyOTP;
+window.resolveConfirm = resolveConfirm;
+
 // ==================== 시작 ====================
 init();
+})();

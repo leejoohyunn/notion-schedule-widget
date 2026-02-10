@@ -362,6 +362,7 @@ header {
 }
 
 .modal-content input[type="text"],
+.modal-content input[type="email"],
 .modal-content input[type="time"],
 .modal-content select {
   width: 100%;
@@ -435,6 +436,46 @@ header {
 
 .btn-save:hover {
   background: #5a5754;
+}
+
+/* 토스트 알림 */
+#toastContainer {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  background: #37352f;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: auto;
+  white-space: nowrap;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 삭제 확인 모달 */
+.confirm-message {
+  font-size: 1rem;
+  margin-bottom: 0;
+  text-align: center;
+  padding: 8px 0;
 }
 
 /* 반응형 */

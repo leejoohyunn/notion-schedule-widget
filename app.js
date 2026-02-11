@@ -776,7 +776,7 @@ document.addEventListener('mousemove', (e) => {
 document.addEventListener('mouseup', async () => {
   if (!dragState.active) return;
 
-  const { element, scheduleId } = dragState;
+  const { element, scheduleId, originalTop, originalHeight, originalDayIndex } = dragState;
   element.classList.remove('dragging');
   document.body.style.cursor = '';
 
@@ -784,28 +784,31 @@ document.addEventListener('mouseup', async () => {
   const height = parseInt(element.style.height);
   const snappedTop = Math.round(top / 15) * 15;
   const snappedHeight = Math.max(Math.round(height / 15) * 15, 15);
+  const currentDayIndex = parseInt(element.dataset.dayIndex);
+
+  // 실제로 이동/리사이즈가 없으면 스킵 (더블클릭 등)
+  const moved = snappedTop !== originalTop || snappedHeight !== originalHeight || currentDayIndex !== originalDayIndex;
 
   element.style.top = `${snappedTop}px`;
   element.style.height = `${snappedHeight}px`;
 
-  const newDayIndex = parseInt(element.dataset.dayIndex);
-  const newDate = new Date(currentWeekStart);
-  newDate.setDate(newDate.getDate() + newDayIndex);
-  const newDateKey = formatDateKey(newDate);
-  const newStartTime = posToTime(snappedTop);
-  const newEndTime = posToTime(snappedTop + snappedHeight);
+  if (moved) {
+    const newDate = new Date(currentWeekStart);
+    newDate.setDate(newDate.getDate() + currentDayIndex);
+    const newDateKey = formatDateKey(newDate);
+    const newStartTime = posToTime(snappedTop);
+    const newEndTime = posToTime(snappedTop + snappedHeight);
 
-  if (dragState.isGoogle) {
-    // Google Calendar 업데이트
-    await updateGoogleEvent(scheduleId, newDateKey, newStartTime, newEndTime);
-  } else {
-    // Supabase 로컬 업데이트
-    const schedule = schedules.find(s => s.id === scheduleId);
-    if (schedule) {
-      schedule.dateKey = newDateKey;
-      schedule.startTime = newStartTime;
-      schedule.endTime = newEndTime;
-      await updateSchedule(scheduleId, schedule);
+    if (dragState.isGoogle) {
+      await updateGoogleEvent(scheduleId, newDateKey, newStartTime, newEndTime);
+    } else {
+      const schedule = schedules.find(s => s.id === scheduleId);
+      if (schedule) {
+        schedule.dateKey = newDateKey;
+        schedule.startTime = newStartTime;
+        schedule.endTime = newEndTime;
+        await updateSchedule(scheduleId, schedule);
+      }
     }
   }
 

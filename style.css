@@ -359,7 +359,7 @@ header {
 .schedule-item.google-event {
   background-color: #039BE5;
   border-left: 3px solid #0277BD;
-  cursor: default;
+  cursor: grab;
   opacity: 0.85;
 }
 

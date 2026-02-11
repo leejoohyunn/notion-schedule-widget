@@ -76,6 +76,7 @@ let dragState = {
   active: false,
   type: null,
   scheduleId: null,
+  isGoogle: false,
   startY: 0,
   startX: 0,
   originalTop: 0,
@@ -560,16 +561,39 @@ function createGoogleEventElement(event) {
   item.style.backgroundColor = eventColor;
   item.style.borderLeftColor = eventColor;
 
+  // dayIndex 찾기
+  const weekDates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(currentWeekStart);
+    d.setDate(d.getDate() + i);
+    weekDates.push(formatDateKey(d));
+  }
+  const dayIndex = weekDates.indexOf(event.date);
+  item.dataset.dayIndex = dayIndex;
+
   item.innerHTML = `
     <div class="title">${escapeHtml(event.title)}</div>
     <div class="time">${event.startTime} - ${event.endTime}</div>
     <button class="delete-btn">&times;</button>
+    <div class="resize-handle"></div>
   `;
 
   // 삭제
   item.querySelector('.delete-btn').addEventListener('click', (e) => {
     e.stopPropagation();
     deleteGoogleEvent(event.id, event.title);
+  });
+
+  // 드래그 이동
+  item.addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('delete-btn') || e.target.classList.contains('resize-handle')) return;
+    startDrag(e, event.id, 'move', item, dayIndex, true);
+  });
+
+  // 리사이즈
+  item.querySelector('.resize-handle').addEventListener('mousedown', (e) => {
+    e.stopPropagation();
+    startDrag(e, event.id, 'resize', item, dayIndex, true);
   });
 
   return item;
@@ -591,6 +615,24 @@ async function createGoogleEvent(title, dateKey, startTime, endTime, color) {
     await loadGoogleCalendarEvents();
   } catch (e) {
     console.error('Google event create error:', e);
+  }
+}
+
+async function updateGoogleEvent(eventId, dateKey, startTime, endTime) {
+  if (!GOOGLE_SCRIPT_URL || !eventId) return;
+  try {
+    const params = new URLSearchParams({
+      action: 'update',
+      id: eventId,
+      date: dateKey,
+      startTime,
+      endTime
+    });
+    await fetch(`${GOOGLE_SCRIPT_URL}?${params}`);
+    await loadGoogleCalendarEvents();
+  } catch (e) {
+    console.error('Google event update error:', e);
+    showToast('수정 실패');
   }
 }
 
@@ -669,13 +711,14 @@ function escapeHtml(text) {
 }
 
 // ==================== 드래그 ====================
-function startDrag(e, scheduleId, type, element, dayIndex) {
+function startDrag(e, scheduleId, type, element, dayIndex, isGoogle = false) {
   e.preventDefault();
 
   dragState = {
     active: true,
     type,
     scheduleId,
+    isGoogle,
     startY: e.clientY,
     startX: e.clientX,
     originalTop: parseInt(element.style.top),
@@ -744,15 +787,18 @@ document.addEventListener('mouseup', async () => {
   const newStartTime = posToTime(snappedTop);
   const newEndTime = posToTime(snappedTop + snappedHeight);
 
-  // 로컬 업데이트
-  const schedule = schedules.find(s => s.id === scheduleId);
-  if (schedule) {
-    schedule.dateKey = newDateKey;
-    schedule.startTime = newStartTime;
-    schedule.endTime = newEndTime;
-
-    // DB 업데이트
-    await updateSchedule(scheduleId, schedule);
+  if (dragState.isGoogle) {
+    // Google Calendar 업데이트
+    await updateGoogleEvent(scheduleId, newDateKey, newStartTime, newEndTime);
+  } else {
+    // Supabase 로컬 업데이트
+    const schedule = schedules.find(s => s.id === scheduleId);
+    if (schedule) {
+      schedule.dateKey = newDateKey;
+      schedule.startTime = newStartTime;
+      schedule.endTime = newEndTime;
+      await updateSchedule(scheduleId, schedule);
+    }
   }
 
   dragState.active = false;

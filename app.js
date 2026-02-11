@@ -52,7 +52,7 @@ const weekDisplay = document.querySelector('.week-display');
 const authBtn = document.getElementById('authBtn');
 
 // ==================== 설정값 ====================
-const START_HOUR = 6;
+const START_HOUR = 0;
 const END_HOUR = 24;
 const HOUR_HEIGHT = 60;
 const DAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
@@ -522,11 +522,7 @@ function createGoogleEventElement(event) {
   const [startHour, startMin] = event.startTime.split(':').map(Number);
   const [endHour, endMin] = event.endTime.split(':').map(Number);
 
-  // 06:00 이전 시작 → 06:00으로 클램핑
-  const clampedStartHour = Math.max(startHour, START_HOUR);
-  const clampedStartMin = startHour < START_HOUR ? 0 : startMin;
-
-  const startPos = (clampedStartHour - START_HOUR) * HOUR_HEIGHT + (clampedStartMin / 60) * HOUR_HEIGHT;
+  const startPos = (startHour - START_HOUR) * HOUR_HEIGHT + (startMin / 60) * HOUR_HEIGHT;
   const endPos = (endHour - START_HOUR) * HOUR_HEIGHT + (endMin / 60) * HOUR_HEIGHT;
   const height = Math.max(endPos - startPos, 24);
 
@@ -534,13 +530,40 @@ function createGoogleEventElement(event) {
   item.className = 'schedule-item google-event';
   item.style.top = `${startPos}px`;
   item.style.height = `${height}px`;
+  if (event.id) item.dataset.googleId = event.id;
 
   item.innerHTML = `
     <div class="title">${escapeHtml(event.title)}</div>
     <div class="time">${event.startTime} - ${event.endTime}</div>
+    <button class="delete-btn">&times;</button>
   `;
 
+  // 삭제
+  item.querySelector('.delete-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    deleteGoogleEvent(event.id, event.title);
+  });
+
   return item;
+}
+
+async function deleteGoogleEvent(eventId, title) {
+  if (!eventId) {
+    showToast('이 일정은 삭제할 수 없습니다.');
+    return;
+  }
+  const confirmed = await showConfirm(`"${title}" 일정을 Google Calendar에서 삭제하시겠습니까?`);
+  if (!confirmed) return;
+
+  try {
+    const params = new URLSearchParams({ action: 'delete', id: eventId });
+    await fetch(`${GOOGLE_SCRIPT_URL}?${params}`);
+    showToast('삭제되었습니다.');
+    await loadGoogleCalendarEvents();
+  } catch (e) {
+    console.error('Google event delete error:', e);
+    showToast('삭제 실패');
+  }
 }
 
 function createScheduleElement(schedule, dayIndex) {

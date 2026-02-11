@@ -558,6 +558,23 @@ function createGoogleEventElement(event) {
   return item;
 }
 
+async function createGoogleEvent(title, dateKey, startTime, endTime) {
+  if (!GOOGLE_SCRIPT_URL) return;
+  try {
+    const params = new URLSearchParams({
+      action: 'create',
+      title,
+      date: dateKey,
+      startTime,
+      endTime
+    });
+    await fetch(`${GOOGLE_SCRIPT_URL}?${params}`);
+    await loadGoogleCalendarEvents();
+  } catch (e) {
+    console.error('Google event create error:', e);
+  }
+}
+
 async function deleteGoogleEvent(eventId, title) {
   if (!eventId) {
     showToast('이 일정은 삭제할 수 없습니다.');
@@ -859,6 +876,7 @@ form.addEventListener('submit', async (e) => {
         id: saved.id,
         ...newSchedule
       });
+      createGoogleEvent(title, dateKey, startTime, endTime);
     }
   }
 

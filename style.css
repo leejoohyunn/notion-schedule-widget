@@ -112,33 +112,12 @@ header {
   background: #5a5754;
 }
 
-/* 전체 래퍼 */
-.schedule-wrapper {
-  border: 1px solid #e9e9e7;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
 /* 스크롤 본문 */
 .weekly-body {
   max-height: calc(100vh - 140px);
   overflow-y: auto;
-}
-
-/* 헤더 행 (sticky) */
-.weekly-header {
-  display: grid;
-  grid-template-columns: 50px repeat(7, minmax(0, 1fr));
-  gap: 1px;
-  background: #e9e9e7;
-  position: sticky;
-  top: 0;
-  z-index: 30;
-}
-
-.weekly-header .header-cell {
-  background: #fafafa;
-  min-height: 50px;
+  border: 1px solid #e9e9e7;
+  border-radius: 8px;
 }
 
 /* 주간 그리드 */
@@ -179,8 +158,12 @@ header {
   align-items: center;
   justify-content: center;
   background: #fafafa;
+  border-bottom: 1px solid #e9e9e7;
   font-weight: 500;
   overflow: hidden;
+  position: sticky;
+  top: 0;
+  z-index: 30;
 }
 
 .day-header .day-name {
@@ -546,7 +529,6 @@ header {
     flex: 1;
   }
 
-  .weekly-header,
   .weekly-grid {
     grid-template-columns: 40px repeat(7, minmax(0, 1fr));
   }

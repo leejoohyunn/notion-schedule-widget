@@ -46,7 +46,6 @@ let _confirmResolve = null;
 let editingGoogleEvent = null;
 
 // ==================== DOM 요소 ====================
-const weeklyHeader = document.getElementById('weeklyHeader');
 const weeklyGrid = document.getElementById('weeklyGrid');
 const modal = document.getElementById('scheduleModal');
 const form = document.getElementById('scheduleForm');
@@ -417,22 +416,37 @@ function renderWeekDisplay() {
 
 // ==================== 그리드 렌더링 ====================
 function renderGrid() {
-  weeklyHeader.innerHTML = '';
   weeklyGrid.innerHTML = '';
   dayColumns = [];
   dayHeaders = [];
 
-  // === 헤더 행 (고정) ===
-  const headerEmpty = document.createElement('div');
-  headerEmpty.className = 'header-cell';
-  weeklyHeader.appendChild(headerEmpty);
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // 시간 컬럼
+  const timeColumn = document.createElement('div');
+  timeColumn.className = 'time-column';
+
+  const timeHeader = document.createElement('div');
+  timeHeader.className = 'day-header';
+  timeColumn.appendChild(timeHeader);
+
+  for (let hour = START_HOUR; hour < END_HOUR; hour++) {
+    const label = document.createElement('div');
+    label.className = 'time-label';
+    label.textContent = `${hour.toString().padStart(2, '0')}:00`;
+    timeColumn.appendChild(label);
+  }
+  weeklyGrid.appendChild(timeColumn);
+
+  // 요일 컬럼
   for (let i = 0; i < 7; i++) {
     const date = new Date(currentWeekStart);
     date.setDate(date.getDate() + i);
+
+    const column = document.createElement('div');
+    column.className = 'day-column';
+    column.dataset.dayIndex = i;
 
     const header = document.createElement('div');
     header.className = 'day-header';
@@ -443,26 +457,8 @@ function renderGrid() {
       <span class="day-name">${DAY_NAMES[i]}</span>
       <span class="day-date">${date.getDate()}</span>
     `;
-    weeklyHeader.appendChild(header);
+    column.appendChild(header);
     dayHeaders.push(header);
-  }
-
-  // === 본문 (스크롤) ===
-  const timeColumn = document.createElement('div');
-  timeColumn.className = 'time-column';
-
-  for (let hour = START_HOUR; hour < END_HOUR; hour++) {
-    const label = document.createElement('div');
-    label.className = 'time-label';
-    label.textContent = `${hour.toString().padStart(2, '0')}:00`;
-    timeColumn.appendChild(label);
-  }
-  weeklyGrid.appendChild(timeColumn);
-
-  for (let i = 0; i < 7; i++) {
-    const column = document.createElement('div');
-    column.className = 'day-column';
-    column.dataset.dayIndex = i;
 
     const slots = document.createElement('div');
     slots.className = 'day-slots';

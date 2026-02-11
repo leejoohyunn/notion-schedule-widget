@@ -1,4 +1,7 @@
 (function() {
+// ==================== Google Calendar 설정 ====================
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwvThs208fsoYd0YkyNYytErHchr6aCMJRwUheDlkL0Jjb_j8k3ui697sEj8NXx2Z8pbA/exec';
+
 // ==================== Supabase 설정 ====================
 const SUPABASE_URL = 'https://gnhirzcrnufzetocwrii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduaGlyemNybnVmemV0b2N3cmlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2MTY5NDgsImV4cCI6MjA4NjE5Mjk0OH0.s9dcZPhhiOMalRPSYQ2MI5MzsaGTYrGut0-4NiDjyMQ';
@@ -37,6 +40,7 @@ try {
 // ==================== 상태 ====================
 let currentUser = null;
 let schedules = [];
+let googleEvents = [];
 let pendingAuthEmail = '';
 let _confirmResolve = null;
 
@@ -98,6 +102,7 @@ async function init() {
   }
 
   renderSchedules();
+  loadGoogleCalendarEvents();
   renderCurrentTimeLine();
   setInterval(renderCurrentTimeLine, 60000);
 }
@@ -235,6 +240,27 @@ function resolveConfirm(result) {
   }
 }
 
+// ==================== Google Calendar ====================
+async function loadGoogleCalendarEvents() {
+  if (!GOOGLE_SCRIPT_URL) return;
+
+  try {
+    const weekEnd = new Date(currentWeekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    const params = new URLSearchParams({
+      start: currentWeekStart.toISOString(),
+      end: weekEnd.toISOString()
+    });
+
+    const res = await fetch(`${GOOGLE_SCRIPT_URL}?${params}`);
+    googleEvents = await res.json();
+    renderSchedules();
+  } catch (e) {
+    console.error('Google Calendar load error:', e);
+  }
+}
+
 // ==================== 데이터베이스 ====================
 async function loadSchedules() {
   if (!supabase || !currentUser) return;
@@ -355,6 +381,7 @@ function changeWeek(delta) {
   renderWeekDisplay();
   renderGrid();
   renderSchedules();
+  loadGoogleCalendarEvents();
   renderCurrentTimeLine();
 }
 
@@ -448,6 +475,7 @@ function renderSchedules() {
     weekDates.push(formatDateKey(date));
   }
 
+  // Supabase 일정
   schedules.forEach(schedule => {
     const dayIndex = weekDates.indexOf(schedule.dateKey);
     if (dayIndex === -1) return;
@@ -459,6 +487,40 @@ function renderSchedules() {
     const item = createScheduleElement(schedule, dayIndex);
     slotsContainer.appendChild(item);
   });
+
+  // Google Calendar 일정
+  googleEvents.forEach(event => {
+    const dayIndex = weekDates.indexOf(event.date);
+    if (dayIndex === -1) return;
+
+    const column = dayColumns[dayIndex];
+    if (!column) return;
+
+    const slotsContainer = column.querySelector('.day-slots');
+    const item = createGoogleEventElement(event);
+    slotsContainer.appendChild(item);
+  });
+}
+
+function createGoogleEventElement(event) {
+  const [startHour, startMin] = event.startTime.split(':').map(Number);
+  const [endHour, endMin] = event.endTime.split(':').map(Number);
+
+  const startPos = (startHour - START_HOUR) * HOUR_HEIGHT + (startMin / 60) * HOUR_HEIGHT;
+  const endPos = (endHour - START_HOUR) * HOUR_HEIGHT + (endMin / 60) * HOUR_HEIGHT;
+  const height = Math.max(endPos - startPos, 24);
+
+  const item = document.createElement('div');
+  item.className = 'schedule-item google-event';
+  item.style.top = `${startPos}px`;
+  item.style.height = `${height}px`;
+
+  item.innerHTML = `
+    <div class="title">${escapeHtml(event.title)}</div>
+    <div class="time">${event.startTime} - ${event.endTime}</div>
+  `;
+
+  return item;
 }
 
 function createScheduleElement(schedule, dayIndex) {

@@ -1,6 +1,6 @@
 (function() {
 // ==================== Google Calendar 설정 ====================
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXMGOzY2AE7O4q9Hx3W3Uaf48bjflrf2sjbVLvRqBD6icz5ZwN88BMw8KqUFmT8lXImQ/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwbOlFaCV7ySh8nnHIgksyNyos8Y9Wt2JfSOBJXzEy0aoTlQpN10JOZGZgXogaQzIYLGQ/exec';
 
 // ==================== Supabase 설정 ====================
 const SUPABASE_URL = 'https://gnhirzcrnufzetocwrii.supabase.co';

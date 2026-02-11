@@ -115,12 +115,11 @@ header {
 /* 주간 그리드 */
 .weekly-grid {
   display: grid;
-  grid-template-columns: 50px repeat(7, 1fr);
+  grid-template-columns: 50px repeat(7, minmax(0, 1fr));
   gap: 1px;
   background: #e9e9e7;
   border: 1px solid #e9e9e7;
   border-radius: 8px;
-  overflow: hidden;
 }
 
 /* 시간 컬럼 */
@@ -129,7 +128,7 @@ header {
 }
 
 .time-column .day-header {
-  height: 50px;
+  min-height: 50px;
   background: #fafafa;
 }
 
@@ -148,10 +147,11 @@ header {
 .day-column {
   background: white;
   position: relative;
+  min-width: 0;
 }
 
 .day-header {
-  height: 50px;
+  min-height: 50px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -159,6 +159,9 @@ header {
   background: #fafafa;
   border-bottom: 1px solid #e9e9e7;
   font-weight: 500;
+  position: sticky;
+  top: 0;
+  z-index: 30;
 }
 
 .day-header .day-name {
@@ -358,7 +361,7 @@ header {
   overflow: hidden;
   text-overflow: ellipsis;
   margin-top: 2px;
-  max-width: 100%;
+  align-self: stretch;
 }
 
 .modal-content label {
@@ -524,7 +527,7 @@ header {
   }
 
   .weekly-grid {
-    grid-template-columns: 40px repeat(7, 1fr);
+    grid-template-columns: 40px repeat(7, minmax(0, 1fr));
   }
 
   .time-label {

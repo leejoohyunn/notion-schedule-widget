@@ -43,6 +43,7 @@ let schedules = [];
 let googleEvents = [];
 let pendingAuthEmail = '';
 let _confirmResolve = null;
+let editingGoogleEvent = null;
 
 // ==================== DOM 요소 ====================
 const weeklyHeader = document.getElementById('weeklyHeader');
@@ -596,6 +597,11 @@ function createGoogleEventElement(event) {
     startDrag(e, event.id, 'resize', item, dayIndex, true);
   });
 
+  // 더블클릭 수정
+  item.addEventListener('dblclick', () => {
+    openModalForGoogle(event);
+  });
+
   return item;
 }
 
@@ -618,7 +624,7 @@ async function createGoogleEvent(title, dateKey, startTime, endTime, color) {
   }
 }
 
-async function updateGoogleEvent(eventId, dateKey, startTime, endTime) {
+async function updateGoogleEvent(eventId, dateKey, startTime, endTime, title, colorId) {
   if (!GOOGLE_SCRIPT_URL || !eventId) return;
   try {
     const params = new URLSearchParams({
@@ -628,6 +634,8 @@ async function updateGoogleEvent(eventId, dateKey, startTime, endTime) {
       startTime,
       endTime
     });
+    if (title) params.set('title', title);
+    if (colorId) params.set('colorId', colorId);
     await fetch(`${GOOGLE_SCRIPT_URL}?${params}`);
     await loadGoogleCalendarEvents();
   } catch (e) {
@@ -886,8 +894,33 @@ function openModal(schedule = null, defaultDayIndex = 0, defaultTime = '09:00') 
   }
 }
 
+function openModalForGoogle(event) {
+  editingGoogleEvent = event;
+  modal.classList.add('active');
+
+  document.getElementById('modalTitle').textContent = '일정 수정';
+  document.getElementById('editId').value = '';
+  document.getElementById('title').value = event.title;
+  document.getElementById('startTime').value = event.startTime;
+  document.getElementById('endTime').value = event.endTime;
+
+  const weekDates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(currentWeekStart);
+    d.setDate(d.getDate() + i);
+    weekDates.push(formatDateKey(d));
+  }
+  const dayIndex = weekDates.indexOf(event.date);
+  document.getElementById('dayOfWeek').value = dayIndex >= 0 ? dayIndex : 0;
+
+  const colorHex = event.colorId ? (GCAL_TO_COLOR[event.colorId] || '#039BE5') : '#039BE5';
+  const colorRadio = document.querySelector(`input[name="color"][value="${colorHex}"]`);
+  if (colorRadio) colorRadio.checked = true;
+}
+
 function closeModal() {
   modal.classList.remove('active');
+  editingGoogleEvent = null;
   form.reset();
 }
 
@@ -915,7 +948,12 @@ form.addEventListener('submit', async (e) => {
   saveBtn.disabled = true;
   saveBtn.textContent = '저장 중...';
 
-  if (editId) {
+  if (editingGoogleEvent) {
+    // Google Calendar 일정 수정
+    const colorId = COLOR_TO_GCAL[color] || '7';
+    await updateGoogleEvent(editingGoogleEvent.id, dateKey, startTime, endTime, title, colorId);
+    editingGoogleEvent = null;
+  } else if (editId) {
     const schedule = schedules.find(s => s.id === editId);
     if (schedule) {
       schedule.title = title;

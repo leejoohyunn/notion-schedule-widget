@@ -255,6 +255,7 @@ async function loadGoogleCalendarEvents() {
 
     const res = await fetch(`${GOOGLE_SCRIPT_URL}?${params}`);
     googleEvents = await res.json();
+    console.log('Google events loaded:', JSON.stringify(googleEvents));
     renderSchedules();
   } catch (e) {
     console.error('Google Calendar load error:', e);
@@ -541,6 +542,7 @@ function createGoogleEventElement(event) {
   // 삭제
   item.querySelector('.delete-btn').addEventListener('click', (e) => {
     e.stopPropagation();
+    console.log('Google event delete clicked, event:', JSON.stringify(event));
     deleteGoogleEvent(event.id, event.title);
   });
 

@@ -58,6 +58,15 @@ const END_HOUR = 24;
 const HOUR_HEIGHT = 60;
 const DAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
 
+// Google Calendar 색상 매핑 (hex ↔ colorId)
+const COLOR_TO_GCAL = {
+  '#D50000': '11', '#E67C73': '4', '#F4511E': '6', '#F6BF26': '5',
+  '#33B679': '2', '#0B8043': '10', '#039BE5': '7', '#3F51B5': '9',
+  '#7986CB': '1', '#8E24AA': '3', '#616161': '8'
+};
+const GCAL_TO_COLOR = {};
+for (const [hex, id] of Object.entries(COLOR_TO_GCAL)) GCAL_TO_COLOR[id] = hex;
+
 let currentWeekStart = getMonday(new Date());
 let dayColumns = [];
 let dayHeaders = [];
@@ -512,6 +521,9 @@ function renderSchedules() {
     const badge = document.createElement('div');
     badge.className = 'google-allday';
     badge.textContent = event.title;
+    if (event.colorId && GCAL_TO_COLOR[event.colorId]) {
+      badge.style.backgroundColor = GCAL_TO_COLOR[event.colorId];
+    }
     header.appendChild(badge);
   });
 
@@ -543,6 +555,11 @@ function createGoogleEventElement(event) {
   item.style.height = `${height}px`;
   if (event.id) item.dataset.googleId = event.id;
 
+  // Google Calendar 색상 적용
+  const eventColor = event.colorId ? (GCAL_TO_COLOR[event.colorId] || '#039BE5') : '#039BE5';
+  item.style.backgroundColor = eventColor;
+  item.style.borderLeftColor = eventColor;
+
   item.innerHTML = `
     <div class="title">${escapeHtml(event.title)}</div>
     <div class="time">${event.startTime} - ${event.endTime}</div>
@@ -558,15 +575,17 @@ function createGoogleEventElement(event) {
   return item;
 }
 
-async function createGoogleEvent(title, dateKey, startTime, endTime) {
+async function createGoogleEvent(title, dateKey, startTime, endTime, color) {
   if (!GOOGLE_SCRIPT_URL) return;
   try {
+    const colorId = COLOR_TO_GCAL[color] || '7';
     const params = new URLSearchParams({
       action: 'create',
       title,
       date: dateKey,
       startTime,
-      endTime
+      endTime,
+      colorId
     });
     await fetch(`${GOOGLE_SCRIPT_URL}?${params}`);
     await loadGoogleCalendarEvents();
@@ -877,7 +896,7 @@ form.addEventListener('submit', async (e) => {
         ...newSchedule
       });
     }
-    await createGoogleEvent(title, dateKey, startTime, endTime);
+    await createGoogleEvent(title, dateKey, startTime, endTime, color);
   }
 
   saveBtn.disabled = false;

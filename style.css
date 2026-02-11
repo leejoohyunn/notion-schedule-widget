@@ -413,6 +413,7 @@ header {
 /* 색상 선택 */
 .color-picker {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
 }

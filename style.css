@@ -119,24 +119,26 @@ header {
   overflow: hidden;
 }
 
-/* 헤더 행 (고정) */
+/* 스크롤 본문 */
+.weekly-body {
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+
+/* 헤더 행 (sticky) */
 .weekly-header {
   display: grid;
   grid-template-columns: 50px repeat(7, minmax(0, 1fr));
   gap: 1px;
   background: #e9e9e7;
-  border-bottom: 1px solid #e9e9e7;
+  position: sticky;
+  top: 0;
+  z-index: 30;
 }
 
 .weekly-header .header-cell {
   background: #fafafa;
   min-height: 50px;
-}
-
-/* 스크롤 본문 */
-.weekly-body {
-  max-height: calc(100vh - 140px);
-  overflow-y: auto;
 }
 
 /* 주간 그리드 */

@@ -45,7 +45,8 @@ let pendingAuthEmail = '';
 let _confirmResolve = null;
 
 // ==================== DOM 요소 ====================
-const weeklyGrid = document.querySelector('.weekly-grid');
+const weeklyHeader = document.getElementById('weeklyHeader');
+const weeklyGrid = document.getElementById('weeklyGrid');
 const modal = document.getElementById('scheduleModal');
 const form = document.getElementById('scheduleForm');
 const weekDisplay = document.querySelector('.week-display');
@@ -59,6 +60,7 @@ const DAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
 
 let currentWeekStart = getMonday(new Date());
 let dayColumns = [];
+let dayHeaders = [];
 
 // 드래그 상태
 let dragState = {
@@ -404,20 +406,15 @@ function renderWeekDisplay() {
 
 // ==================== 그리드 렌더링 ====================
 function renderGrid() {
+  weeklyHeader.innerHTML = '';
   weeklyGrid.innerHTML = '';
   dayColumns = [];
+  dayHeaders = [];
 
-  const timeColumn = document.createElement('div');
-  timeColumn.className = 'time-column';
-  timeColumn.innerHTML = '<div class="day-header"></div>';
-
-  for (let hour = START_HOUR; hour < END_HOUR; hour++) {
-    const label = document.createElement('div');
-    label.className = 'time-label';
-    label.textContent = `${hour.toString().padStart(2, '0')}:00`;
-    timeColumn.appendChild(label);
-  }
-  weeklyGrid.appendChild(timeColumn);
+  // === 헤더 행 (고정) ===
+  const headerEmpty = document.createElement('div');
+  headerEmpty.className = 'header-cell';
+  weeklyHeader.appendChild(headerEmpty);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -425,10 +422,6 @@ function renderGrid() {
   for (let i = 0; i < 7; i++) {
     const date = new Date(currentWeekStart);
     date.setDate(date.getDate() + i);
-
-    const column = document.createElement('div');
-    column.className = 'day-column';
-    column.dataset.dayIndex = i;
 
     const header = document.createElement('div');
     header.className = 'day-header';
@@ -439,7 +432,26 @@ function renderGrid() {
       <span class="day-name">${DAY_NAMES[i]}</span>
       <span class="day-date">${date.getDate()}</span>
     `;
-    column.appendChild(header);
+    weeklyHeader.appendChild(header);
+    dayHeaders.push(header);
+  }
+
+  // === 본문 (스크롤) ===
+  const timeColumn = document.createElement('div');
+  timeColumn.className = 'time-column';
+
+  for (let hour = START_HOUR; hour < END_HOUR; hour++) {
+    const label = document.createElement('div');
+    label.className = 'time-label';
+    label.textContent = `${hour.toString().padStart(2, '0')}:00`;
+    timeColumn.appendChild(label);
+  }
+  weeklyGrid.appendChild(timeColumn);
+
+  for (let i = 0; i < 7; i++) {
+    const column = document.createElement('div');
+    column.className = 'day-column';
+    column.dataset.dayIndex = i;
 
     const slots = document.createElement('div');
     slots.className = 'day-slots';
@@ -494,10 +506,9 @@ function renderSchedules() {
     const dayIndex = weekDates.indexOf(event.date);
     if (dayIndex === -1) return;
 
-    const column = dayColumns[dayIndex];
-    if (!column) return;
+    const header = dayHeaders[dayIndex];
+    if (!header) return;
 
-    const header = column.querySelector('.day-header');
     const badge = document.createElement('div');
     badge.className = 'google-allday';
     badge.textContent = event.title;

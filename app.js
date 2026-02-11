@@ -876,8 +876,8 @@ form.addEventListener('submit', async (e) => {
         id: saved.id,
         ...newSchedule
       });
-      createGoogleEvent(title, dateKey, startTime, endTime);
     }
+    await createGoogleEvent(title, dateKey, startTime, endTime);
   }
 
   saveBtn.disabled = false;

@@ -124,13 +124,12 @@ header {
 .weekly-grid {
   display: grid;
   grid-template-columns: 50px repeat(7, minmax(0, 1fr));
-  gap: 1px;
-  background: #e9e9e7;
 }
 
 /* 시간 컬럼 */
 .time-column {
   background: #fafafa;
+  border-right: 1px solid #e9e9e7;
 }
 
 .time-label {
@@ -149,6 +148,11 @@ header {
   background: white;
   position: relative;
   min-width: 0;
+  border-right: 1px solid #e9e9e7;
+}
+
+.day-column:last-child {
+  border-right: none;
 }
 
 .day-header {

@@ -1,6 +1,6 @@
 (function() {
 // ==================== Google Calendar 설정 ====================
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwvThs208fsoYd0YkyNYytErHchr6aCMJRwUheDlkL0Jjb_j8k3ui697sEj8NXx2Z8pbA/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzK7KAOtSrmXKEBfUlu8oq5z3-57pnqMT3j9YvqILmSUZdGRVpFfpO80Ps570M_8cEeKw/exec';
 
 // ==================== Supabase 설정 ====================
 const SUPABASE_URL = 'https://gnhirzcrnufzetocwrii.supabase.co';
@@ -467,6 +467,7 @@ function renderGrid() {
 // ==================== 스케줄 렌더링 ====================
 function renderSchedules() {
   document.querySelectorAll('.schedule-item').forEach(el => el.remove());
+  document.querySelectorAll('.google-allday').forEach(el => el.remove());
 
   const weekDates = [];
   for (let i = 0; i < 7; i++) {
@@ -488,8 +489,23 @@ function renderSchedules() {
     slotsContainer.appendChild(item);
   });
 
-  // Google Calendar 일정
-  googleEvents.forEach(event => {
+  // Google Calendar 종일 일정
+  googleEvents.filter(e => e.allDay).forEach(event => {
+    const dayIndex = weekDates.indexOf(event.date);
+    if (dayIndex === -1) return;
+
+    const column = dayColumns[dayIndex];
+    if (!column) return;
+
+    const header = column.querySelector('.day-header');
+    const badge = document.createElement('div');
+    badge.className = 'google-allday';
+    badge.textContent = event.title;
+    header.appendChild(badge);
+  });
+
+  // Google Calendar 시간 일정
+  googleEvents.filter(e => !e.allDay).forEach(event => {
     const dayIndex = weekDates.indexOf(event.date);
     if (dayIndex === -1) return;
 
@@ -506,7 +522,11 @@ function createGoogleEventElement(event) {
   const [startHour, startMin] = event.startTime.split(':').map(Number);
   const [endHour, endMin] = event.endTime.split(':').map(Number);
 
-  const startPos = (startHour - START_HOUR) * HOUR_HEIGHT + (startMin / 60) * HOUR_HEIGHT;
+  // 06:00 이전 시작 → 06:00으로 클램핑
+  const clampedStartHour = Math.max(startHour, START_HOUR);
+  const clampedStartMin = startHour < START_HOUR ? 0 : startMin;
+
+  const startPos = (clampedStartHour - START_HOUR) * HOUR_HEIGHT + (clampedStartMin / 60) * HOUR_HEIGHT;
   const endPos = (endHour - START_HOUR) * HOUR_HEIGHT + (endMin / 60) * HOUR_HEIGHT;
   const height = Math.max(endPos - startPos, 24);
 

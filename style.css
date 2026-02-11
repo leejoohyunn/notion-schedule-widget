@@ -335,7 +335,7 @@ header {
   margin-bottom: 16px;
 }
 
-/* Google Calendar 일정 */
+/* Google Calendar 시간 일정 */
 .schedule-item.google-event {
   background-color: #039BE5;
   border-left: 3px solid #0277BD;
@@ -345,6 +345,20 @@ header {
 
 .schedule-item.google-event:hover {
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Google Calendar 종일 일정 */
+.google-allday {
+  background: #039BE5;
+  color: white;
+  font-size: 0.65rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+  max-width: 100%;
 }
 
 .modal-content label {

@@ -495,19 +495,6 @@ function renderSchedules() {
     weekDates.push(formatDateKey(date));
   }
 
-  // Supabase 일정
-  schedules.forEach(schedule => {
-    const dayIndex = weekDates.indexOf(schedule.dateKey);
-    if (dayIndex === -1) return;
-
-    const column = dayColumns[dayIndex];
-    if (!column) return;
-
-    const slotsContainer = column.querySelector('.day-slots');
-    const item = createScheduleElement(schedule, dayIndex);
-    slotsContainer.appendChild(item);
-  });
-
   // Google Calendar 종일 일정
   googleEvents.filter(e => e.allDay).forEach(event => {
     const dayIndex = weekDates.indexOf(event.date);
@@ -525,101 +512,99 @@ function renderSchedules() {
     header.appendChild(badge);
   });
 
-  // Google Calendar 시간 일정
+  // 모든 시간 일정을 요일별로 수집
+  const eventsPerDay = Array.from({length: 7}, () => []);
+
+  schedules.forEach(schedule => {
+    const dayIndex = weekDates.indexOf(schedule.dateKey);
+    if (dayIndex === -1) return;
+    const [sh, sm] = schedule.startTime.split(':').map(Number);
+    const [eh, em] = schedule.endTime.split(':').map(Number);
+    const top = (sh - START_HOUR) * HOUR_HEIGHT + (sm / 60) * HOUR_HEIGHT;
+    const bottom = (eh - START_HOUR) * HOUR_HEIGHT + (em / 60) * HOUR_HEIGHT;
+    eventsPerDay[dayIndex].push({
+      type: 'supabase', data: schedule, dayIndex,
+      top, bottom: Math.max(bottom, top + 24)
+    });
+  });
+
   googleEvents.filter(e => !e.allDay).forEach(event => {
     const dayIndex = weekDates.indexOf(event.date);
     if (dayIndex === -1) return;
+    const [sh, sm] = event.startTime.split(':').map(Number);
+    const [eh, em] = event.endTime.split(':').map(Number);
+    const top = (sh - START_HOUR) * HOUR_HEIGHT + (sm / 60) * HOUR_HEIGHT;
+    const bottom = (eh - START_HOUR) * HOUR_HEIGHT + (em / 60) * HOUR_HEIGHT;
+    eventsPerDay[dayIndex].push({
+      type: 'google', data: event, dayIndex,
+      top, bottom: Math.max(bottom, top + 24)
+    });
+  });
+
+  // 요일별 겹침 계산 후 렌더링
+  eventsPerDay.forEach((dayEvents, dayIndex) => {
+    if (dayEvents.length === 0) return;
 
     const column = dayColumns[dayIndex];
     if (!column) return;
-
     const slotsContainer = column.querySelector('.day-slots');
-    const item = createGoogleEventElement(event);
-    slotsContainer.appendChild(item);
-  });
 
-  layoutOverlaps();
-}
+    // 시간순 정렬
+    dayEvents.sort((a, b) => a.top - b.top || a.bottom - b.bottom);
 
-// ==================== 겹치는 일정 레이아웃 ====================
-function layoutOverlaps() {
-  dayColumns.forEach(column => {
-    const slotsContainer = column.querySelector('.day-slots');
-    if (!slotsContainer) return;
-
-    const items = Array.from(slotsContainer.querySelectorAll('.schedule-item'));
-    if (items.length === 0) return;
-
-    const containerWidth = slotsContainer.offsetWidth;
-
-    if (items.length === 1) {
-      items[0].style.left = '2px';
-      items[0].style.width = (containerWidth - 4) + 'px';
-      return;
-    }
-
-    // 각 일정의 top/bottom 추출
-    const events = items.map(item => ({
-      el: item,
-      top: parseInt(item.style.top),
-      bottom: parseInt(item.style.top) + parseInt(item.style.height)
-    }));
-
-    // top 기준 정렬
-    events.sort((a, b) => a.top - b.top || a.bottom - b.bottom);
-
-    // 겹치는 일정을 클러스터로 그룹화
+    // 겹치는 일정 클러스터 그룹화
     const clusters = [];
-    let currentCluster = [events[0]];
-
-    for (let i = 1; i < events.length; i++) {
-      const clusterEnd = Math.max(...currentCluster.map(e => e.bottom));
-      if (events[i].top < clusterEnd) {
-        currentCluster.push(events[i]);
+    let cluster = [dayEvents[0]];
+    for (let i = 1; i < dayEvents.length; i++) {
+      const clusterEnd = Math.max(...cluster.map(e => e.bottom));
+      if (dayEvents[i].top < clusterEnd) {
+        cluster.push(dayEvents[i]);
       } else {
-        clusters.push(currentCluster);
-        currentCluster = [events[i]];
+        clusters.push(cluster);
+        cluster = [dayEvents[i]];
       }
     }
-    clusters.push(currentCluster);
+    clusters.push(cluster);
 
-    // 각 클러스터 내에서 열 배치
-    clusters.forEach(cluster => {
-      if (cluster.length === 1) {
-        cluster[0].el.style.left = '2px';
-        cluster[0].el.style.width = (containerWidth - 4) + 'px';
-        return;
-      }
-
-      // 그리디 열 배정
-      const columns = [];
-      cluster.forEach(event => {
+    // 각 클러스터 내 열 배정
+    clusters.forEach(cl => {
+      const cols = []; // cols[c] = 해당 열의 마지막 이벤트 bottom 값
+      cl.forEach(ev => {
         let placed = false;
-        for (let col = 0; col < columns.length; col++) {
-          const lastInCol = columns[col][columns[col].length - 1];
-          if (event.top >= lastInCol.bottom) {
-            columns[col].push(event);
-            event.col = col;
+        for (let c = 0; c < cols.length; c++) {
+          if (ev.top >= cols[c]) {
+            cols[c] = ev.bottom;
+            ev.col = c;
             placed = true;
             break;
           }
         }
         if (!placed) {
-          event.col = columns.length;
-          columns.push([event]);
+          ev.col = cols.length;
+          cols.push(ev.bottom);
         }
       });
+      const totalCols = cols.length;
+      cl.forEach(ev => { ev.totalCols = totalCols; });
+    });
 
-      const totalCols = columns.length;
-      const colWidth = containerWidth / totalCols;
-      const padding = 2;
+    // 렌더링 (겹침 레이아웃 즉시 적용)
+    dayEvents.forEach(ev => {
+      let item;
+      if (ev.type === 'supabase') {
+        item = createScheduleElement(ev.data, ev.dayIndex);
+      } else {
+        item = createGoogleEventElement(ev.data);
+      }
 
-      cluster.forEach(event => {
-        const leftPx = event.col * colWidth + padding;
-        const widthPx = colWidth - padding * 2;
-        event.el.style.left = leftPx + 'px';
-        event.el.style.width = widthPx + 'px';
-      });
+      // 겹치는 일정이면 나란히 배치
+      if (ev.totalCols > 1) {
+        const pct = 100 / ev.totalCols;
+        item.style.left = (ev.col * pct) + '%';
+        item.style.width = pct + '%';
+      }
+
+      slotsContainer.appendChild(item);
     });
   });
 }

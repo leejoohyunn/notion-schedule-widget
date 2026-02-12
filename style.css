@@ -425,10 +425,27 @@ header {
   box-shadow: 0 0 0 3px white, 0 0 0 5px currentColor;
 }
 
+.btn-delete {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: #fff0f0;
+  color: #D50000;
+  margin-top: 20px;
+  transition: background 0.2s;
+}
+
+.btn-delete:hover {
+  background: #ffe0e0;
+}
+
 .modal-actions {
   display: flex;
   gap: 12px;
-  margin-top: 24px;
+  margin-top: 12px;
 }
 
 .btn-cancel,

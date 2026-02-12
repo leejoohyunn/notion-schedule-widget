@@ -931,6 +931,7 @@ function openModal(schedule = null, defaultDayIndex = 0, defaultTime = '09:00') 
   }
 
   modal.classList.add('active');
+  const deleteBtn = document.getElementById('modalDeleteBtn');
 
   if (schedule) {
     document.getElementById('modalTitle').textContent = '일정 수정';
@@ -950,6 +951,8 @@ function openModal(schedule = null, defaultDayIndex = 0, defaultTime = '09:00') 
 
     const colorRadio = document.querySelector(`input[name="color"][value="${schedule.color}"]`);
     if (colorRadio) colorRadio.checked = true;
+
+    deleteBtn.style.display = 'block';
   } else {
     document.getElementById('modalTitle').textContent = '일정 추가';
     form.reset();
@@ -960,6 +963,8 @@ function openModal(schedule = null, defaultDayIndex = 0, defaultTime = '09:00') 
     const [h, m] = defaultTime.split(':').map(Number);
     const endHour = Math.min(h + 1, END_HOUR);
     document.getElementById('endTime').value = `${endHour.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+
+    deleteBtn.style.display = 'none';
   }
 }
 
@@ -985,11 +990,27 @@ function openModalForGoogle(event) {
   const colorHex = event.colorId ? (GCAL_TO_COLOR[event.colorId] || '#039BE5') : '#039BE5';
   const colorRadio = document.querySelector(`input[name="color"][value="${colorHex}"]`);
   if (colorRadio) colorRadio.checked = true;
+
+  document.getElementById('modalDeleteBtn').style.display = 'block';
+}
+
+async function deleteFromModal() {
+  if (editingGoogleEvent) {
+    closeModal();
+    await deleteGoogleEvent(editingGoogleEvent.id, editingGoogleEvent.title);
+  } else {
+    const editId = document.getElementById('editId').value;
+    if (editId) {
+      closeModal();
+      await deleteSchedule(editId);
+    }
+  }
 }
 
 function closeModal() {
   modal.classList.remove('active');
   editingGoogleEvent = null;
+  document.getElementById('modalDeleteBtn').style.display = 'none';
   form.reset();
 }
 
@@ -1109,6 +1130,7 @@ window.closeAuthModal = closeAuthModal;
 window.sendOTP = sendOTP;
 window.verifyOTP = verifyOTP;
 window.resolveConfirm = resolveConfirm;
+window.deleteFromModal = deleteFromModal;
 
 // ==================== 시작 ====================
 init();

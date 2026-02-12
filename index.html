@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Weekly Schedule</title>
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -91,6 +91,7 @@
           <label for="c11" style="background:#616161"></label>
         </div>
 
+        <button type="button" class="btn-delete" id="modalDeleteBtn" style="display:none;" onclick="deleteFromModal()">삭제</button>
         <div class="modal-actions">
           <button type="button" class="btn-cancel" onclick="closeModal()">취소</button>
           <button type="submit" class="btn-save">저장</button>
@@ -137,6 +138,6 @@
   <!-- 토스트 알림 -->
   <div id="toastContainer"></div>
 
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

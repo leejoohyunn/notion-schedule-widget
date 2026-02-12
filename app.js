@@ -549,11 +549,9 @@ function layoutOverlaps() {
 
     const items = Array.from(slotsContainer.querySelectorAll('.schedule-item'));
     if (items.length <= 1) {
-      // 단일 일정은 기본 레이아웃 복원
       items.forEach(item => {
         item.style.left = '2px';
-        item.style.right = '2px';
-        item.style.width = '';
+        item.style.width = 'calc(100% - 4px)';
       });
       return;
     }
@@ -587,8 +585,7 @@ function layoutOverlaps() {
     clusters.forEach(cluster => {
       if (cluster.length === 1) {
         cluster[0].el.style.left = '2px';
-        cluster[0].el.style.right = '2px';
-        cluster[0].el.style.width = '';
+        cluster[0].el.style.width = 'calc(100% - 4px)';
         return;
       }
 
@@ -612,14 +609,13 @@ function layoutOverlaps() {
       });
 
       const totalCols = columns.length;
-      const padding = 2; // px
+      const padding = 2;
 
       cluster.forEach(event => {
         const widthPercent = 100 / totalCols;
         const leftPercent = event.col * widthPercent;
         event.el.style.left = `calc(${leftPercent}% + ${padding}px)`;
         event.el.style.width = `calc(${widthPercent}% - ${padding * 2}px)`;
-        event.el.style.right = 'auto';
       });
     });
   });

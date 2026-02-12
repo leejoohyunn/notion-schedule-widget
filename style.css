@@ -206,7 +206,7 @@ header {
 .schedule-item {
   position: absolute;
   left: 2px;
-  right: 2px;
+  width: calc(100% - 4px);
   border-radius: 4px;
   padding: 4px 6px;
   color: white;
@@ -219,7 +219,7 @@ header {
 
 .schedule-item:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  z-index: 20;
+  z-index: 11;
 }
 
 .schedule-item .title {

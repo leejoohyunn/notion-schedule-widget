@@ -548,11 +548,13 @@ function layoutOverlaps() {
     if (!slotsContainer) return;
 
     const items = Array.from(slotsContainer.querySelectorAll('.schedule-item'));
-    if (items.length <= 1) {
-      items.forEach(item => {
-        item.style.left = '2px';
-        item.style.width = 'calc(100% - 4px)';
-      });
+    if (items.length === 0) return;
+
+    const containerWidth = slotsContainer.offsetWidth;
+
+    if (items.length === 1) {
+      items[0].style.left = '2px';
+      items[0].style.width = (containerWidth - 4) + 'px';
       return;
     }
 
@@ -585,11 +587,11 @@ function layoutOverlaps() {
     clusters.forEach(cluster => {
       if (cluster.length === 1) {
         cluster[0].el.style.left = '2px';
-        cluster[0].el.style.width = 'calc(100% - 4px)';
+        cluster[0].el.style.width = (containerWidth - 4) + 'px';
         return;
       }
 
-      // 그리디 열 배정: 각 이벤트를 겹치지 않는 가장 왼쪽 열에 배치
+      // 그리디 열 배정
       const columns = [];
       cluster.forEach(event => {
         let placed = false;
@@ -609,13 +611,14 @@ function layoutOverlaps() {
       });
 
       const totalCols = columns.length;
+      const colWidth = containerWidth / totalCols;
       const padding = 2;
 
       cluster.forEach(event => {
-        const widthPercent = 100 / totalCols;
-        const leftPercent = event.col * widthPercent;
-        event.el.style.left = `calc(${leftPercent}% + ${padding}px)`;
-        event.el.style.width = `calc(${widthPercent}% - ${padding * 2}px)`;
+        const leftPx = event.col * colWidth + padding;
+        const widthPx = colWidth - padding * 2;
+        event.el.style.left = leftPx + 'px';
+        event.el.style.width = widthPx + 'px';
       });
     });
   });

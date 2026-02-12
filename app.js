@@ -537,6 +537,92 @@ function renderSchedules() {
     const item = createGoogleEventElement(event);
     slotsContainer.appendChild(item);
   });
+
+  layoutOverlaps();
+}
+
+// ==================== 겹치는 일정 레이아웃 ====================
+function layoutOverlaps() {
+  dayColumns.forEach(column => {
+    const slotsContainer = column.querySelector('.day-slots');
+    if (!slotsContainer) return;
+
+    const items = Array.from(slotsContainer.querySelectorAll('.schedule-item'));
+    if (items.length <= 1) {
+      // 단일 일정은 기본 레이아웃 복원
+      items.forEach(item => {
+        item.style.left = '2px';
+        item.style.right = '2px';
+        item.style.width = '';
+      });
+      return;
+    }
+
+    // 각 일정의 top/bottom 추출
+    const events = items.map(item => ({
+      el: item,
+      top: parseInt(item.style.top),
+      bottom: parseInt(item.style.top) + parseInt(item.style.height)
+    }));
+
+    // top 기준 정렬
+    events.sort((a, b) => a.top - b.top || a.bottom - b.bottom);
+
+    // 겹치는 일정을 클러스터로 그룹화
+    const clusters = [];
+    let currentCluster = [events[0]];
+
+    for (let i = 1; i < events.length; i++) {
+      const clusterEnd = Math.max(...currentCluster.map(e => e.bottom));
+      if (events[i].top < clusterEnd) {
+        currentCluster.push(events[i]);
+      } else {
+        clusters.push(currentCluster);
+        currentCluster = [events[i]];
+      }
+    }
+    clusters.push(currentCluster);
+
+    // 각 클러스터 내에서 열 배치
+    clusters.forEach(cluster => {
+      if (cluster.length === 1) {
+        cluster[0].el.style.left = '2px';
+        cluster[0].el.style.right = '2px';
+        cluster[0].el.style.width = '';
+        return;
+      }
+
+      // 그리디 열 배정: 각 이벤트를 겹치지 않는 가장 왼쪽 열에 배치
+      const columns = [];
+      cluster.forEach(event => {
+        let placed = false;
+        for (let col = 0; col < columns.length; col++) {
+          const lastInCol = columns[col][columns[col].length - 1];
+          if (event.top >= lastInCol.bottom) {
+            columns[col].push(event);
+            event.col = col;
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          event.col = columns.length;
+          columns.push([event]);
+        }
+      });
+
+      const totalCols = columns.length;
+      const padding = 2; // px
+
+      cluster.forEach(event => {
+        const widthPercent = 100 / totalCols;
+        const leftPercent = event.col * widthPercent;
+        event.el.style.left = `calc(${leftPercent}% + ${padding}px)`;
+        event.el.style.width = `calc(${widthPercent}% - ${padding * 2}px)`;
+        event.el.style.right = 'auto';
+      });
+    });
+  });
 }
 
 function createGoogleEventElement(event) {

@@ -512,12 +512,21 @@ function renderSchedules() {
     header.appendChild(badge);
   });
 
+  // Google Calendar 시간 일정의 키 세트 (중복 제거용)
+  const googleEventKeys = new Set();
+  googleEvents.filter(e => !e.allDay).forEach(event => {
+    googleEventKeys.add(`${event.date}|${event.startTime}|${event.endTime}|${event.title}`);
+  });
+
   // 모든 시간 일정을 요일별로 수집
   const eventsPerDay = Array.from({length: 7}, () => []);
 
   schedules.forEach(schedule => {
     const dayIndex = weekDates.indexOf(schedule.dateKey);
     if (dayIndex === -1) return;
+    // Google Calendar에 같은 일정이 있으면 Supabase 일정은 스킵
+    const key = `${schedule.dateKey}|${schedule.startTime}|${schedule.endTime}|${schedule.title}`;
+    if (googleEventKeys.has(key)) return;
     const [sh, sm] = schedule.startTime.split(':').map(Number);
     const [eh, em] = schedule.endTime.split(':').map(Number);
     const top = (sh - START_HOUR) * HOUR_HEIGHT + (sm / 60) * HOUR_HEIGHT;

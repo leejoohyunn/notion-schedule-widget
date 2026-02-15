@@ -1,94 +1,23 @@
 # Notion Weekly Schedule Widget
 
-Notion에 임베드할 수 있는 주간 일정표 위젯입니다. Google Calendar와 양방향 동기화를 지원합니다.
+A weekly schedule widget that can be embedded in Notion. Supports two-way sync with Google Calendar.
 
-## 데모
+**Live Demo**: `https://leejoohyunn.github.io/notion-schedule-widget/`
 
-**배포 URL**: `https://leejoohyunn.github.io/notion-schedule-widget/`
+Embed this URL using the `/embed` block in Notion.
 
-Notion에서 `/embed` 블록으로 위 URL을 삽입하면 바로 사용할 수 있습니다.
+## How to Use (End Users)
 
-## 주요 기능
+### 1. Log in
 
-### 일정 관리
-- **24시간 주간 뷰** — 0:00~24:00 전체 시간대를 한눈에 확인
-- **드래그 이동** — 일정 블록을 드래그하여 시간/요일 변경
-- **리사이즈** — 일정 하단 핸들을 드래그하여 시간 길이 조절
-- **더블클릭 수정** — 일정을 더블클릭하여 제목, 시간, 색상 수정 및 삭제
-- **삭제** — 일정 위 × 버튼 또는 수정 모달의 삭제 버튼으로 삭제
-- **겹치는 일정** — 같은 시간대에 여러 일정이 있으면 나란히 표시
-- **주간 네비게이션** — 이전/다음 주 탐색
+- Open the widget and click the **Login** button
+- Enter your email and submit
+- Check your inbox for a 6-digit OTP code and enter it
 
-### Google Calendar 연동
-- **양방향 동기화** — 위젯에서 생성한 일정이 Google Calendar에도 자동 생성
-- **색상 동기화** — Google Calendar의 11가지 색상과 위젯 색상이 일치
-- **시간 일정 표시** — Google Calendar의 시간 일정을 그리드에 표시
-- **종일 일정 표시** — 종일 일정은 요일 헤더에 뱃지로 표시
-- **일정 수정/삭제** — Google Calendar 일정도 위젯에서 직접 수정 및 삭제 가능
-- **중복 제거** — 위젯에서 생성한 일정이 Google Calendar과 중복 표시되지 않도록 자동 처리
+### 2. Connect Google Calendar
 
-### Notion 임베드 최적화
-- **이메일 OTP 로그인** — iframe 환경에서 OAuth가 불가하므로 Supabase 이메일 인증 사용
-- **커스텀 알림** — `alert()`, `confirm()` 대신 토스트 알림과 커스텀 모달 다이얼로그 사용
-- **iframe 스토리지 대응** — localStorage 차단 시 in-memory 스토리지로 자동 폴백
-- **고정 헤더** — 스크롤 시 요일/날짜 헤더가 상단에 고정
-- **현재 시간선** — 오늘 날짜 컬럼에 현재 시간 표시
-
-## 기술 스택
-
-| 구분 | 기술 |
-|------|------|
-| 프론트엔드 | Vanilla JavaScript, HTML, CSS |
-| 인증/DB | Supabase (이메일 OTP + PostgreSQL) |
-| 캘린더 연동 | Google Apps Script (REST API 프록시) |
-| 배포 | GitHub Pages |
-
-## 프로젝트 구조
-
-```
-notion-schedule-widget/
-├── index.html    # 메인 HTML (모달, 토스트 포함)
-├── app.js        # 앱 로직 (인증, CRUD, 드래그, 캘린더 연동)
-├── style.css     # 스타일 (그리드, 모달, 반응형)
-└── README.md
-```
-
-## 설정 방법
-
-### 1. Supabase 설정
-
-1. [Supabase](https://supabase.com)에서 프로젝트 생성
-2. `schedules` 테이블 생성:
-   ```sql
-   create table schedules (
-     id uuid default gen_random_uuid() primary key,
-     user_id uuid references auth.users(id),
-     title text not null,
-     date_key text not null,
-     start_time text not null,
-     end_time text not null,
-     color text default '#039BE5'
-   );
-   ```
-3. `user_settings` 테이블 생성 (다중 사용자 Google Calendar 지원):
-   ```sql
-   create table user_settings (
-     user_id uuid references auth.users(id) primary key,
-     google_script_url text
-   );
-   alter table user_settings enable row level security;
-   create policy "Users can read own settings" on user_settings for select using (auth.uid() = user_id);
-   create policy "Users can insert own settings" on user_settings for insert with check (auth.uid() = user_id);
-   create policy "Users can update own settings" on user_settings for update using (auth.uid() = user_id);
-   ```
-4. Authentication → Email OTP 활성화
-5. Settings → Site URL을 배포 URL로 설정
-6. `app.js`에 Supabase URL과 Anon Key 입력
-
-### 2. Google Apps Script 설정
-
-1. [Google Apps Script](https://script.google.com)에서 새 프로젝트 생성
-2. 아래 코드를 붙여넣기:
+1. Go to [Google Apps Script](https://script.google.com) and create a new project
+2. Paste the following code:
 
    ```javascript
    function doGet(e) {
@@ -157,12 +86,83 @@ notion-schedule-widget/
    }
    ```
 
-3. 배포 → 새 배포 → 웹 앱 (누구나 접근 가능) 선택
-4. 위젯에 로그인 후 설정(⚙) 버튼을 클릭하여 생성된 URL을 입력
+3. Click **Deploy** > **New deployment** > Select **Web app**
+4. Set "Who has access" to **Anyone**
+5. Click **Deploy** and copy the generated URL
+6. Back in the widget, click the **Settings** button (gear icon) and paste the URL > **Save**
 
-> **다중 사용자 지원**: 각 사용자가 자신의 Google Apps Script를 배포하고 위젯 설정에서 URL을 등록하면, 각자의 Google Calendar와 연동됩니다.
+Your Google Calendar events will now appear in the widget.
 
-### 3. 배포
+## Features
+
+### Schedule Management
+- **24-hour weekly view** — Full day view from 0:00 to 24:00
+- **Drag to move** — Drag schedule blocks to change time or day
+- **Resize** — Drag the bottom handle to adjust duration
+- **Double-click to edit** — Edit title, time, and color
+- **Delete** — Click the X button on hover or use the delete button in the edit modal
+- **Overlapping events** — Multiple events at the same time are displayed side by side
+- **Week navigation** — Browse previous/next weeks
+
+### Google Calendar Sync
+- **Two-way sync** — Events created in the widget are automatically added to Google Calendar
+- **Color sync** — All 11 Google Calendar colors are supported
+- **Timed events** — Displayed on the time grid
+- **All-day events** — Shown as badges in the day header
+- **Edit/Delete** — Google Calendar events can be modified directly in the widget
+- **Deduplication** — Prevents duplicate display of synced events
+
+### Optimized for Notion Embed
+- **Email OTP login** — Uses Supabase email auth since OAuth is not available in iframes
+- **Custom alerts** — Toast notifications and custom modal dialogs instead of `alert()`/`confirm()`
+- **iframe storage fallback** — Automatic in-memory fallback when localStorage is blocked
+- **Sticky headers** — Day/date headers stay fixed while scrolling
+- **Current time indicator** — Red line showing current time on today's column
+
+## Tech Stack
+
+| Category | Technology |
+|----------|-----------|
+| Frontend | Vanilla JavaScript, HTML, CSS |
+| Auth/DB | Supabase (Email OTP + PostgreSQL) |
+| Calendar | Google Apps Script (REST API proxy) |
+| Hosting | GitHub Pages |
+
+## Self-Hosting Guide
+
+If you want to fork and deploy your own instance:
+
+### 1. Supabase Setup
+
+1. Create a project at [Supabase](https://supabase.com)
+2. Create the `schedules` table:
+   ```sql
+   create table schedules (
+     id uuid default gen_random_uuid() primary key,
+     user_id uuid references auth.users(id),
+     title text not null,
+     date_key text not null,
+     start_time text not null,
+     end_time text not null,
+     color text default '#039BE5'
+   );
+   ```
+3. Create the `user_settings` table (per-user Google Calendar support):
+   ```sql
+   create table user_settings (
+     user_id uuid references auth.users(id) primary key,
+     google_script_url text
+   );
+   alter table user_settings enable row level security;
+   create policy "Users can read own settings" on user_settings for select using (auth.uid() = user_id);
+   create policy "Users can insert own settings" on user_settings for insert with check (auth.uid() = user_id);
+   create policy "Users can update own settings" on user_settings for update using (auth.uid() = user_id);
+   ```
+4. Go to **Authentication** > **Providers** > **Email** and enable OTP
+5. Set the **Site URL** to your deployment URL
+6. Update `app.js` with your Supabase URL and Anon Key
+
+### 2. Deploy
 
 ```bash
 git add -A
@@ -170,14 +170,24 @@ git commit -m "Initial deploy"
 git push origin main
 ```
 
-GitHub Pages가 `main` 브랜치에서 자동 배포됩니다.
+Enable GitHub Pages from the `main` branch in your repository settings.
 
-## 색상 매핑
+## Project Structure
 
-위젯과 Google Calendar의 색상이 동기화됩니다:
+```
+notion-schedule-widget/
+├── index.html    # Main HTML (modals, toast)
+├── app.js        # App logic (auth, CRUD, drag, calendar sync)
+├── style.css     # Styles (grid, modals, responsive)
+└── README.md
+```
 
-| 색상 | Hex | Google Calendar ID |
-|------|-----|-------------------|
+## Color Mapping
+
+Widget colors are synced with Google Calendar:
+
+| Color | Hex | Google Calendar ID |
+|-------|-----|-------------------|
 | Tomato | `#D50000` | 11 |
 | Flamingo | `#E67C73` | 4 |
 | Tangerine | `#F4511E` | 6 |

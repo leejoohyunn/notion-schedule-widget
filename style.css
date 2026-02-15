@@ -96,6 +96,23 @@ header {
   background: #e0e0e0;
 }
 
+.settings-btn {
+  background: #f0f0f0;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: #6b6b6b;
+  transition: background 0.2s, color 0.2s;
+}
+
+.settings-btn:hover {
+  background: #e0e0e0;
+  color: #37352f;
+}
+
 .add-btn {
   background: #37352f;
   color: white;

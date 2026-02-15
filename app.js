@@ -1,6 +1,6 @@
 (function() {
 // ==================== Google Calendar 설정 ====================
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwbOlFaCV7ySh8nnHIgksyNyos8Y9Wt2JfSOBJXzEy0aoTlQpN10JOZGZgXogaQzIYLGQ/exec';
+let googleScriptUrl = '';
 
 // ==================== Supabase 설정 ====================
 const SUPABASE_URL = 'https://gnhirzcrnufzetocwrii.supabase.co';
@@ -96,6 +96,7 @@ async function init() {
       currentUser = session.user;
       updateAuthButton(true);
       await loadSchedules();
+      await loadUserSettings();
     }
 
     supabase.auth.onAuthStateChange(async (event, session) => {
@@ -104,9 +105,13 @@ async function init() {
         currentUser = session.user;
         updateAuthButton(true);
         await loadSchedules();
+        await loadUserSettings();
+        loadGoogleCalendarEvents();
       } else {
         currentUser = null;
         schedules = [];
+        googleScriptUrl = '';
+        googleEvents = [];
         updateAuthButton(false);
         renderSchedules();
       }
@@ -130,6 +135,8 @@ function handleAuth() {
     supabase.auth.signOut();
     currentUser = null;
     schedules = [];
+    googleScriptUrl = '';
+    googleEvents = [];
     updateAuthButton(false);
     renderSchedules();
     showToast('로그아웃 되었습니다.');
@@ -220,6 +227,80 @@ function updateAuthButton(isLoggedIn) {
   }
 }
 
+// ==================== 사용자 설정 (Google Script URL) ====================
+async function loadUserSettings() {
+  if (!supabase || !currentUser) return;
+
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('google_script_url')
+    .eq('user_id', currentUser.id)
+    .single();
+
+  if (error) {
+    if (error.code !== 'PGRST116') console.error('Load settings error:', error);
+    googleScriptUrl = '';
+    return;
+  }
+
+  googleScriptUrl = data.google_script_url || '';
+}
+
+async function saveUserSettings(url) {
+  if (!supabase || !currentUser) return false;
+
+  const { error } = await supabase
+    .from('user_settings')
+    .upsert({
+      user_id: currentUser.id,
+      google_script_url: url
+    });
+
+  if (error) {
+    console.error('Save settings error:', error);
+    return false;
+  }
+
+  googleScriptUrl = url;
+  return true;
+}
+
+function openSettingsModal() {
+  if (!currentUser) {
+    showToast('로그인이 필요합니다.');
+    return;
+  }
+  const settingsModal = document.getElementById('settingsModal');
+  document.getElementById('googleScriptUrlInput').value = googleScriptUrl;
+  settingsModal.classList.add('active');
+}
+
+function closeSettingsModal() {
+  document.getElementById('settingsModal').classList.remove('active');
+}
+
+async function saveSettings() {
+  const url = document.getElementById('googleScriptUrlInput').value.trim();
+  const btn = document.getElementById('saveSettingsBtn');
+  btn.disabled = true;
+  btn.textContent = '저장 중...';
+
+  const success = await saveUserSettings(url);
+
+  btn.disabled = false;
+  btn.textContent = '저장';
+
+  if (success) {
+    closeSettingsModal();
+    showToast('설정이 저장되었습니다.');
+    googleEvents = [];
+    renderSchedules();
+    loadGoogleCalendarEvents();
+  } else {
+    showToast('설정 저장에 실패했습니다.');
+  }
+}
+
 // ==================== 토스트 / 확인 다이얼로그 ====================
 function showToast(message) {
   const container = document.getElementById('toastContainer');
@@ -254,7 +335,7 @@ function resolveConfirm(result) {
 
 // ==================== Google Calendar ====================
 async function loadGoogleCalendarEvents() {
-  if (!GOOGLE_SCRIPT_URL) return;
+  if (!googleScriptUrl) return;
 
   try {
     const weekEnd = new Date(currentWeekStart);
@@ -265,7 +346,7 @@ async function loadGoogleCalendarEvents() {
       end: weekEnd.toISOString()
     });
 
-    const res = await fetch(`${GOOGLE_SCRIPT_URL}?${params}`);
+    const res = await fetch(`${googleScriptUrl}?${params}`);
     googleEvents = await res.json();
     renderSchedules();
   } catch (e) {
@@ -681,7 +762,7 @@ function createGoogleEventElement(event) {
 }
 
 async function createGoogleEvent(title, dateKey, startTime, endTime, color) {
-  if (!GOOGLE_SCRIPT_URL) return;
+  if (!googleScriptUrl) return;
   try {
     const colorId = COLOR_TO_GCAL[color] || '7';
     const params = new URLSearchParams({
@@ -692,7 +773,7 @@ async function createGoogleEvent(title, dateKey, startTime, endTime, color) {
       endTime,
       colorId
     });
-    await fetch(`${GOOGLE_SCRIPT_URL}?${params}`);
+    await fetch(`${googleScriptUrl}?${params}`);
     await loadGoogleCalendarEvents();
   } catch (e) {
     console.error('Google event create error:', e);
@@ -700,7 +781,7 @@ async function createGoogleEvent(title, dateKey, startTime, endTime, color) {
 }
 
 async function updateGoogleEvent(eventId, dateKey, startTime, endTime, title, colorId) {
-  if (!GOOGLE_SCRIPT_URL || !eventId) return;
+  if (!googleScriptUrl || !eventId) return;
   try {
     const params = new URLSearchParams({
       action: 'update',
@@ -711,7 +792,7 @@ async function updateGoogleEvent(eventId, dateKey, startTime, endTime, title, co
     });
     if (title) params.set('title', title);
     if (colorId) params.set('colorId', colorId);
-    await fetch(`${GOOGLE_SCRIPT_URL}?${params}`);
+    await fetch(`${googleScriptUrl}?${params}`);
     await loadGoogleCalendarEvents();
   } catch (e) {
     console.error('Google event update error:', e);
@@ -729,7 +810,7 @@ async function deleteGoogleEvent(eventId, title) {
 
   try {
     const params = new URLSearchParams({ action: 'delete', id: eventId });
-    await fetch(`${GOOGLE_SCRIPT_URL}?${params}`);
+    await fetch(`${googleScriptUrl}?${params}`);
     showToast('삭제되었습니다.');
     await loadGoogleCalendarEvents();
   } catch (e) {
@@ -1113,11 +1194,16 @@ document.getElementById('confirmModal').addEventListener('click', (e) => {
   if (e.target.id === 'confirmModal') resolveConfirm(false);
 });
 
+document.getElementById('settingsModal').addEventListener('click', (e) => {
+  if (e.target.id === 'settingsModal') closeSettingsModal();
+});
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (modal.classList.contains('active')) closeModal();
     if (document.getElementById('authModal').classList.contains('active')) closeAuthModal();
     if (document.getElementById('confirmModal').classList.contains('active')) resolveConfirm(false);
+    if (document.getElementById('settingsModal').classList.contains('active')) closeSettingsModal();
   }
 });
 
@@ -1140,6 +1226,9 @@ window.sendOTP = sendOTP;
 window.verifyOTP = verifyOTP;
 window.resolveConfirm = resolveConfirm;
 window.deleteFromModal = deleteFromModal;
+window.openSettingsModal = openSettingsModal;
+window.closeSettingsModal = closeSettingsModal;
+window.saveSettings = saveSettings;
 
 // ==================== 시작 ====================
 init();

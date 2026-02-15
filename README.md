@@ -70,9 +70,20 @@ notion-schedule-widget/
      color text default '#039BE5'
    );
    ```
-3. Authentication → Email OTP 활성화
-4. Settings → Site URL을 배포 URL로 설정
-5. `app.js`에 Supabase URL과 Anon Key 입력
+3. `user_settings` 테이블 생성 (다중 사용자 Google Calendar 지원):
+   ```sql
+   create table user_settings (
+     user_id uuid references auth.users(id) primary key,
+     google_script_url text
+   );
+   alter table user_settings enable row level security;
+   create policy "Users can read own settings" on user_settings for select using (auth.uid() = user_id);
+   create policy "Users can insert own settings" on user_settings for insert with check (auth.uid() = user_id);
+   create policy "Users can update own settings" on user_settings for update using (auth.uid() = user_id);
+   ```
+4. Authentication → Email OTP 활성화
+5. Settings → Site URL을 배포 URL로 설정
+6. `app.js`에 Supabase URL과 Anon Key 입력
 
 ### 2. Google Apps Script 설정
 
@@ -147,7 +158,9 @@ notion-schedule-widget/
    ```
 
 3. 배포 → 새 배포 → 웹 앱 (누구나 접근 가능) 선택
-4. 생성된 URL을 `app.js`의 `GOOGLE_SCRIPT_URL`에 입력
+4. 위젯에 로그인 후 설정(⚙) 버튼을 클릭하여 생성된 URL을 입력
+
+> **다중 사용자 지원**: 각 사용자가 자신의 Google Apps Script를 배포하고 위젯 설정에서 URL을 등록하면, 각자의 Google Calendar와 연동됩니다.
 
 ### 3. 배포
 

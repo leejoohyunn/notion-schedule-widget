@@ -374,17 +374,28 @@ header {
 }
 
 /* Google Calendar 종일 일정 */
+.allday-slot {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  flex: none;
+}
+
 .google-allday {
   background: #039BE5;
   color: white;
   font-size: 0.65rem;
-  padding: 1px 4px;
+  line-height: 14px;
+  height: 16px;
+  padding: 0 4px;
   border-radius: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 2px;
-  align-self: stretch;
+  box-sizing: border-box;
+  flex: none;
 }
 
 .modal-content label {

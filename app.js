@@ -62,6 +62,7 @@ const authBtn = document.getElementById('authBtn');
 const START_HOUR = 0;
 const END_HOUR = 24;
 const HOUR_HEIGHT = 60;
+const ALLDAY_ROW_H = 18;   // 종일 일정 한 줄 높이(px)
 const DAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
 
 // Google Calendar 색상 매핑 (hex ↔ colorId)
@@ -595,20 +596,36 @@ function renderSchedules() {
   }
 
   // Google Calendar 종일 일정
+  // 배지를 헤더에 바로 넣으면 그 요일 헤더만 높아져서 칸이 밀린다.
+  // 7일 모두에 같은 높이의 슬롯을 만들고 그 안에 넣어 높이를 일치시킨다.
+  const alldayByDay = Array.from({length: 7}, () => []);
   googleEvents.filter(e => e.allDay).forEach(event => {
     const dayIndex = weekDates.indexOf(event.date);
-    if (dayIndex === -1) return;
+    if (dayIndex !== -1) alldayByDay[dayIndex].push(event);
+  });
+  const maxAllDay = Math.max(0, ...alldayByDay.map(a => a.length));
 
-    const header = dayHeaders[dayIndex];
+  dayHeaders.forEach((header, i) => {
     if (!header) return;
-
-    const badge = document.createElement('div');
-    badge.className = 'google-allday';
-    badge.textContent = event.title;
-    if (event.colorId && GCAL_TO_COLOR[event.colorId]) {
-      badge.style.backgroundColor = GCAL_TO_COLOR[event.colorId];
+    let slot = header.querySelector('.allday-slot');
+    if (!slot) {
+      slot = document.createElement('div');
+      slot.className = 'allday-slot';
+      header.appendChild(slot);
     }
-    header.appendChild(badge);
+    slot.innerHTML = '';
+    slot.style.height = maxAllDay ? (maxAllDay * ALLDAY_ROW_H) + 'px' : '0px';
+
+    alldayByDay[i].forEach(event => {
+      const badge = document.createElement('div');
+      badge.className = 'google-allday';
+      badge.textContent = event.title;
+      badge.title = event.title;
+      if (event.colorId && GCAL_TO_COLOR[event.colorId]) {
+        badge.style.backgroundColor = GCAL_TO_COLOR[event.colorId];
+      }
+      slot.appendChild(badge);
+    });
   });
 
   // Google Calendar 시간 일정의 키 세트 (중복 제거용)

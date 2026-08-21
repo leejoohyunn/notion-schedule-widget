@@ -63,6 +63,7 @@ const START_HOUR = 0;
 const END_HOUR = 24;
 const HOUR_HEIGHT = 60;
 const ALLDAY_ROW_H = 18;   // 종일 일정 한 줄 높이(px)
+const HEADER_BASE_H = 50;  // 요일 헤더 기본 높이(px) — style.css의 min-height와 일치
 const DAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
 
 // Google Calendar 색상 매핑 (hex ↔ colorId)
@@ -568,7 +569,7 @@ function renderGrid() {
       slot.className = 'time-slot';
       slot.dataset.hour = hour;
       slot.addEventListener('click', () => {
-        if (!currentUser) {
+        if (USE_SUPABASE && !currentUser) {
           showToast('로그인이 필요합니다.');
           return;
         }
@@ -605,8 +606,14 @@ function renderSchedules() {
   });
   const maxAllDay = Math.max(0, ...alldayByDay.map(a => a.length));
 
-  dayHeaders.forEach((header, i) => {
+  // 시간 라벨 컬럼의 헤더도 같은 높이로 맞춰야 라벨과 블록이 어긋나지 않는다
+  const timeHeader = document.querySelector('.time-column .day-header');
+  const headerH = HEADER_BASE_H + (maxAllDay ? maxAllDay * ALLDAY_ROW_H : 0);
+
+  [timeHeader, ...dayHeaders].forEach((header, idx) => {
     if (!header) return;
+    header.style.height = headerH + 'px';
+
     let slot = header.querySelector('.allday-slot');
     if (!slot) {
       slot = document.createElement('div');
@@ -615,6 +622,9 @@ function renderSchedules() {
     }
     slot.innerHTML = '';
     slot.style.height = maxAllDay ? (maxAllDay * ALLDAY_ROW_H) + 'px' : '0px';
+
+    if (idx === 0) return;            // 시간 컬럼은 자리만 맞추고 배지는 넣지 않음
+    const i = idx - 1;
 
     alldayByDay[i].forEach(event => {
       const badge = document.createElement('div');
@@ -1050,7 +1060,7 @@ function renderCurrentTimeLine() {
 
 // ==================== 모달 ====================
 function openModal(schedule = null, defaultDayIndex = 0, defaultTime = '09:00') {
-  if (!currentUser) {
+  if (USE_SUPABASE && !currentUser) {
     showToast('로그인이 필요합니다.');
     return;
   }

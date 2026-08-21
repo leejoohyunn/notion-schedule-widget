@@ -2,6 +2,12 @@
 // ==================== Google Calendar 설정 ====================
 let googleScriptUrl = '';
 
+// ==================== 모드 스위치 ====================
+// Supabase 프로젝트가 삭제되어 로그인/원격저장을 끕니다.
+// 나중에 Supabase를 새로 만들면 true로 바꾸고 아래 URL/KEY만 교체하면 원상복구됩니다.
+const USE_SUPABASE = false;
+const LS_SCRIPT_URL = 'notion-widget:googleScriptUrl';
+
 // ==================== Supabase 설정 ====================
 const SUPABASE_URL = 'https://gnhirzcrnufzetocwrii.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduaGlyemNybnVmemV0b2N3cmlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2MTY5NDgsImV4cCI6MjA4NjE5Mjk0OH0.s9dcZPhhiOMalRPSYQ2MI5MzsaGTYrGut0-4NiDjyMQ';
@@ -25,7 +31,7 @@ const customStorage = {
 
 let supabase;
 try {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  if (USE_SUPABASE) supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       storage: customStorage,
       autoRefreshToken: true,
@@ -117,6 +123,9 @@ async function init() {
       }
     });
   }
+
+  if (!USE_SUPABASE && authBtn) authBtn.style.display = 'none';
+  await loadUserSettings();
 
   renderSchedules();
   loadGoogleCalendarEvents();
@@ -229,6 +238,10 @@ function updateAuthButton(isLoggedIn) {
 
 // ==================== 사용자 설정 (Google Script URL) ====================
 async function loadUserSettings() {
+  if (!USE_SUPABASE) {
+    googleScriptUrl = customStorage.getItem(LS_SCRIPT_URL) || '';
+    return;
+  }
   if (!supabase || !currentUser) return;
 
   const { data, error } = await supabase
@@ -247,6 +260,11 @@ async function loadUserSettings() {
 }
 
 async function saveUserSettings(url) {
+  if (!USE_SUPABASE) {
+    customStorage.setItem(LS_SCRIPT_URL, url);
+    googleScriptUrl = url;
+    return true;
+  }
   if (!supabase || !currentUser) return false;
 
   const { error } = await supabase
@@ -266,7 +284,7 @@ async function saveUserSettings(url) {
 }
 
 function openSettingsModal() {
-  if (!currentUser) {
+  if (USE_SUPABASE && !currentUser) {
     showToast('로그인이 필요합니다.');
     return;
   }
